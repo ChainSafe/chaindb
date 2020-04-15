@@ -1,4 +1,4 @@
-package database
+package chaindb
 
 import (
 	"github.com/dgraph-io/badger/v2"
