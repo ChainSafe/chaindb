@@ -1,4 +1,4 @@
-module github.com/ChainSafe/gossamer-db
+module github.com/ChainSafe/chaindb
 
 go 1.13
 
