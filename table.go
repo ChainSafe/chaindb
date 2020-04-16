@@ -16,10 +16,6 @@
 
 package chaindb
 
-import (
-	log "github.com/ChainSafe/log15"
-)
-
 type table struct {
 	db     Database
 	prefix string
@@ -60,11 +56,7 @@ func (dt *table) Del(key []byte) error {
 
 // Close closes table db
 func (dt *table) Close() error {
-	if err := dt.db.Close(); err != nil {
-		log.Crit("Failed to close *db.Database", "err", err)
-		return err
-	}
-	return nil
+	return dt.db.Close()
 }
 
 // NewIterator initializes type Iterator

@@ -152,7 +152,6 @@ func (db *BadgerDB) Close() error {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 	if err := db.db.Close(); err != nil {
-		log.Crit("Failed to close *badger.DB", "err", err)
 		return err
 	}
 	return nil
@@ -258,15 +257,11 @@ func (b *batchWriter) Write() error {
 	defer wb.Cancel()
 
 	for k, v := range b.b {
-		err := wb.Set([]byte(k), v)
-		if err != nil {
-			log.Warn("error writing batch txs ", "error", err)
+		if err := wb.Set([]byte(k), v); err != nil {
+			return err
 		}
 	}
-	if err := wb.Flush(); err != nil {
-		log.Warn("error stored by write batch ", "error", err)
-	}
-	return nil
+	return wb.Flush()
 }
 
 // ValueSize returns the amount of data in the batch
@@ -278,9 +273,8 @@ func (b *batchWriter) ValueSize() int {
 func (b *batchWriter) Del(key []byte) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
-	err := b.db.db.NewWriteBatch().Delete(key)
-	if err != nil {
-		log.Warn("error batch deleting key ", "error", err)
+	if err := b.db.db.NewWriteBatch().Delete(key); err != nil {
+		return err
 	}
 	b.size++
 	return nil
