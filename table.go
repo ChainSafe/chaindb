@@ -16,14 +16,12 @@
 
 package chaindb
 
-import (
-	log "github.com/ChainSafe/log15"
-)
-
 type table struct {
 	db     Database
 	prefix string
 }
+
+var _ Database = (*table)(nil)
 
 type tableBatch struct {
 	batch  Batch
@@ -58,17 +56,12 @@ func (dt *table) Del(key []byte) error {
 
 // Close closes table db
 func (dt *table) Close() error {
-	if err := dt.db.Close(); err != nil {
-		log.Crit("Failed to close *db.Database", "err", err)
-		return err
-	}
-	log.Debug("Database *db.Database closed successfully")
-	return nil
+	return dt.db.Close()
 }
 
-// NewIterator initializes type Iterable
-func (dt *table) NewIterator() Iterable {
-	return Iterable{}
+// NewIterator initializes type Iterator
+func (dt *table) NewIterator() Iterator {
+	return nil
 }
 
 // Path returns table prefix
@@ -107,8 +100,8 @@ func (tb *tableBatch) Reset() {
 }
 
 // Delete removes the key from the batch and database
-func (tb *tableBatch) Delete(k []byte) error {
-	err := tb.batch.Delete(k)
+func (tb *tableBatch) Del(k []byte) error {
+	err := tb.batch.Del(k)
 	if err != nil {
 		return err
 	}

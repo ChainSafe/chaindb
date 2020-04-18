@@ -32,7 +32,9 @@ type BadgerDB struct {
 	lock   sync.RWMutex
 }
 
-//Config defines configurations for BadgerService instance
+var _ Database = (*BadgerDB)(nil)
+
+// Config defines configurations for BadgerService instance
 type Config struct {
 	DataDir string
 }
@@ -150,15 +152,13 @@ func (db *BadgerDB) Close() error {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 	if err := db.db.Close(); err != nil {
-		log.Crit("Failed to close *badger.DB", "err", err)
 		return err
 	}
-	log.Debug("Database *badger.DB closed successfully")
 	return nil
 }
 
-// Iterable struct contains a transaction, iterator and context fields released, initialized
-type Iterable struct {
+// BadgerIterator struct contains a transaction, iterator and context fields released, initialized
+type BadgerIterator struct {
 	txn      *badger.Txn
 	iter     *badger.Iterator
 	released bool
@@ -167,20 +167,18 @@ type Iterable struct {
 }
 
 // NewIterator returns a new iterator within the Iterator struct along with a new transaction
-func (db *BadgerDB) NewIterator() Iterable {
+func (db *BadgerDB) NewIterator() Iterator {
 	txn := db.db.NewTransaction(false)
 	opts := badger.DefaultIteratorOptions
 	iter := txn.NewIterator(opts)
-	return Iterable{
-		txn:      txn,
-		iter:     iter,
-		released: false,
-		init:     false,
+	return &BadgerIterator{
+		txn:  txn,
+		iter: iter,
 	}
 }
 
 // Release closes the iterator, discards the created transaction and sets released value to true
-func (i *Iterable) Release() {
+func (i *BadgerIterator) Release() {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	i.iter.Close()
@@ -189,13 +187,13 @@ func (i *Iterable) Release() {
 }
 
 // Released returns the boolean indicating whether the iterator and transaction was successfully released
-func (i *Iterable) Released() bool {
+func (i *BadgerIterator) Released() bool {
 	return i.released
 }
 
 // Next rewinds the iterator to the zero-th position if uninitialized, and then will advance the iterator by one
 // returns bool to ensure access to the item
-func (i *Iterable) Next() bool {
+func (i *BadgerIterator) Next() bool {
 	i.lock.RLock()
 	defer i.lock.RUnlock()
 	if !i.init {
@@ -208,14 +206,14 @@ func (i *Iterable) Next() bool {
 
 // Seek will look for the provided key if present and go to that position. If
 // absent, it would seek to the next smallest key
-func (i *Iterable) Seek(key []byte) {
+func (i *BadgerIterator) Seek(key []byte) {
 	i.lock.RLock()
 	defer i.lock.RUnlock()
 	i.iter.Seek(snappy.Encode(nil, key))
 }
 
 // Key returns an item key
-func (i *Iterable) Key() []byte {
+func (i *BadgerIterator) Key() []byte {
 	i.lock.RLock()
 	defer i.lock.RUnlock()
 	ret, err := snappy.Decode(nil, i.iter.Item().Key())
@@ -226,7 +224,7 @@ func (i *Iterable) Key() []byte {
 }
 
 // Value returns a copy of the value of the item
-func (i *Iterable) Value() []byte {
+func (i *BadgerIterator) Value() []byte {
 	i.lock.RLock()
 	defer i.lock.RUnlock()
 	val, err := i.iter.Item().ValueCopy(nil)
@@ -259,15 +257,11 @@ func (b *batchWriter) Write() error {
 	defer wb.Cancel()
 
 	for k, v := range b.b {
-		err := wb.Set([]byte(k), v)
-		if err != nil {
-			log.Warn("error writing batch txs ", "error", err)
+		if err := wb.Set([]byte(k), v); err != nil {
+			return err
 		}
 	}
-	if err := wb.Flush(); err != nil {
-		log.Warn("error stored by write batch ", "error", err)
-	}
-	return nil
+	return wb.Flush()
 }
 
 // ValueSize returns the amount of data in the batch
@@ -275,13 +269,12 @@ func (b *batchWriter) ValueSize() int {
 	return b.size
 }
 
-// Delete removes the key from the batch and database
-func (b *batchWriter) Delete(key []byte) error {
+// Del removes the key from the batch and database
+func (b *batchWriter) Del(key []byte) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
-	err := b.db.db.NewWriteBatch().Delete(key)
-	if err != nil {
-		log.Warn("error batch deleting key ", "error", err)
+	if err := b.db.db.NewWriteBatch().Delete(key); err != nil {
+		return err
 	}
 	b.size++
 	return nil
