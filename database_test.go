@@ -52,20 +52,17 @@ func TestBadgerDB_PutGetDel(t *testing.T) {
 func testPutGetter(db Database, t *testing.T) {
 	tests := testSetup()
 	for _, v := range tests {
-		v := v
-		t.Run("PutGetter", func(t *testing.T) {
-			err := db.Put([]byte(v.input), []byte(v.input))
-			if err != nil {
-				t.Fatalf("put failed: %v", err)
-			}
-			data, err := db.Get([]byte(v.input))
-			if err != nil {
-				t.Fatalf("get failed: %v", err)
-			}
-			if !bytes.Equal(data, []byte(v.expected)) {
-				t.Fatalf("get returned wrong result, got %q expected %q", string(data), v.expected)
-			}
-		})
+		err := db.Put([]byte(v.input), []byte(v.input))
+		if err != nil {
+			t.Fatalf("put failed: %v", err)
+		}
+		data, err := db.Get([]byte(v.input))
+		if err != nil {
+			t.Fatalf("get failed: %v", err)
+		}
+		if !bytes.Equal(data, []byte(v.expected)) {
+			t.Fatalf("get returned wrong result, got %q expected %q", string(data), v.expected)
+		}
 	}
 }
 
@@ -87,20 +84,17 @@ func testUpdateGetter(db Database, t *testing.T) {
 	tests := testSetup()
 
 	for _, v := range tests {
-		v := v
-		t.Run("UpdateGetter", func(t *testing.T) {
-			err := db.Put([]byte(v.input), []byte("?"))
-			if err != nil {
-				t.Fatalf("put override failed: %v", err)
-			}
-			data, err := db.Get([]byte(v.input))
-			if err != nil {
-				t.Fatalf("get failed: %v", err)
-			}
-			if !bytes.Equal(data, []byte("?")) {
-				t.Fatalf("get returned wrong result, got %q expected ?", string(data))
-			}
-		})
+		err := db.Put([]byte(v.input), []byte("?"))
+		if err != nil {
+			t.Fatalf("put override failed: %v", err)
+		}
+		data, err := db.Get([]byte(v.input))
+		if err != nil {
+			t.Fatalf("get failed: %v", err)
+		}
+		if !bytes.Equal(data, []byte("?")) {
+			t.Fatalf("get returned wrong result, got %q expected ?", string(data))
+		}
 	}
 }
 
@@ -108,18 +102,14 @@ func testDelGetter(db Database, t *testing.T) {
 	tests := testSetup()
 
 	for _, v := range tests {
-		v := v
-		t.Run("DelGetter", func(t *testing.T) {
-			v := v
-			err := db.Del([]byte(v.input))
-			if err != nil {
-				t.Fatalf("delete %q failed: %v", v.input, err)
-			}
-			d, _ := db.Get([]byte(v.input))
-			if len(d) > 1 {
-				t.Fatalf("failed to delete value %q", v.input)
-			}
-		})
+		err := db.Del([]byte(v.input))
+		if err != nil {
+			t.Fatalf("delete %q failed: %v", v.input, err)
+		}
+		d, _ := db.Get([]byte(v.input))
+		if len(d) > 1 {
+			t.Fatalf("failed to delete value %q", v.input)
+		}
 	}
 }
 
@@ -231,17 +221,14 @@ func testSeekKeyValueIterator(db Database, t *testing.T) {
 	defer it.Release()
 
 	for _, k := range kv {
-		k := k
-		t.Run("SeekKeyValueIterator", func(t *testing.T) {
-			it.Seek([]byte(k.input))
-			if !bytes.Equal(it.Key(), []byte(k.input)) {
-				t.Fatalf("failed to retrieve presented key, got %v, expected %v", it.Key(), k.input)
-			}
-			it.Seek([]byte(k.input))
-			if !bytes.Equal(it.Value(), []byte(k.expected)) {
-				t.Fatalf("failed to retrieve presented key, got %v, expected %v", it.Key(), k.expected)
-			}
-		})
+		it.Seek([]byte(k.input))
+		if !bytes.Equal(it.Key(), []byte(k.input)) {
+			t.Fatalf("failed to retrieve presented key, got %v, expected %v", it.Key(), k.input)
+		}
+		it.Seek([]byte(k.input))
+		if !bytes.Equal(it.Value(), []byte(k.expected)) {
+			t.Fatalf("failed to retrieve presented key, got %v, expected %v", it.Key(), k.expected)
+		}
 	}
 }
 
