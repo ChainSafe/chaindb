@@ -22,8 +22,6 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-
-	"github.com/dgraph-io/badger/v2"
 )
 
 type data struct {
@@ -181,7 +179,6 @@ func TestBadgerDB_Iterator(t *testing.T) {
 	db, remove := newTestBadgerDB(t)
 	defer remove()
 
-	testNewIterator(db, t)
 	testNextKeyIterator(db, t)
 	testSeekKeyValueIterator(db, t)
 }
@@ -201,40 +198,11 @@ func testIteratorSetup(db Database, t *testing.T) {
 	}
 }
 
-func testNewIterator(db Database, t *testing.T) {
-	testIteratorSetup(db, t)
-
-	it := db.NewIterator().(*BadgerIterator)
-	defer func() {
-		if it.Released() != true {
-			it.Release()
-		}
-	}()
-	if it.init {
-		t.Fatalf("failed to init iterator")
-	}
-	if it.released {
-		t.Fatalf("failed to set release to false")
-	}
-	i, ok := interface{}(it.iter).(*badger.Iterator)
-	if !ok {
-		t.Fatalf("failed to set badger Iterator type %v", i)
-	}
-	txn, ok := interface{}(it.txn).(*badger.Txn)
-	if !ok {
-		t.Fatalf("failed to set badger Txn type %v", txn)
-	}
-}
-
 func testNextKeyIterator(db Database, t *testing.T) {
 	testIteratorSetup(db, t)
 
-	it := db.NewIterator().(*BadgerIterator)
-	defer func() {
-		if it.Released() != true {
-			it.Release()
-		}
-	}()
+	it := db.NewIterator()
+	defer it.Release()
 
 	ok := it.Next()
 	if !ok {
@@ -263,11 +231,7 @@ func testSeekKeyValueIterator(db Database, t *testing.T) {
 	kv := testKVData()
 
 	it := db.NewIterator().(*BadgerIterator)
-	defer func() {
-		if it.Released() != true {
-			it.Release()
-		}
-	}()
+	defer it.Release()
 
 	for _, k := range kv {
 		k := k

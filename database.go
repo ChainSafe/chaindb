@@ -157,13 +157,12 @@ func (db *BadgerDB) Close() error {
 	return nil
 }
 
-// BadgerIterator struct contains a transaction, iterator and context fields released, initialized
+// BadgerIterator struct contains a transaction, iterator and init.
 type BadgerIterator struct {
-	txn      *badger.Txn
-	iter     *badger.Iterator
-	released bool
-	init     bool
-	lock     sync.RWMutex
+	txn  *badger.Txn
+	iter *badger.Iterator
+	init bool
+	lock sync.RWMutex
 }
 
 // NewIterator returns a new iterator within the Iterator struct along with a new transaction
@@ -177,18 +176,12 @@ func (db *BadgerDB) NewIterator() Iterator {
 	}
 }
 
-// Release closes the iterator, discards the created transaction and sets released value to true
+// Release closes the iterator and discards the created transaction.
 func (i *BadgerIterator) Release() {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	i.iter.Close()
 	i.txn.Discard()
-	i.released = true
-}
-
-// Released returns the boolean indicating whether the iterator and transaction was successfully released
-func (i *BadgerIterator) Released() bool {
-	return i.released
 }
 
 // Next rewinds the iterator to the zero-th position if uninitialized, and then will advance the iterator by one
