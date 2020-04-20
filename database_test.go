@@ -40,8 +40,7 @@ func testSetup() []data {
 }
 
 func TestBadgerDB_PutGetDel(t *testing.T) {
-	db, remove := newTestBadgerDB(t)
-	defer remove()
+	db := newTestBadgerDB(t)
 
 	testPutGetter(db, t)
 	testHasGetter(db, t)
@@ -132,8 +131,7 @@ func testGetPath(db Database, t *testing.T) {
 }
 
 func TestBadgerDB_Batch(t *testing.T) {
-	db, remove := newTestBadgerDB(t)
-	defer remove()
+	db := newTestBadgerDB(t)
 	testBatchPut(db, t)
 }
 
@@ -176,8 +174,7 @@ func testBatchPut(db Database, t *testing.T) {
 }
 
 func TestBadgerDB_Iterator(t *testing.T) {
-	db, remove := newTestBadgerDB(t)
-	defer remove()
+	db := newTestBadgerDB(t)
 
 	testNextKeyIterator(db, t)
 	testSeekKeyValueIterator(db, t)
@@ -248,24 +245,25 @@ func testSeekKeyValueIterator(db Database, t *testing.T) {
 	}
 }
 
-func newTestBadgerDB(t *testing.T) (Database, func()) {
-	dir, err := ioutil.TempDir(os.TempDir(), "test_data")
+func newTestBadgerDB(t *testing.T) Database {
+	dir, err := ioutil.TempDir("", "test_data")
 	if err != nil {
 		t.Fatal("failed to create temp dir: " + err.Error())
 	}
+	t.Cleanup(func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Error(err)
+		}
+	})
 
-	badgerDb, err := NewBadgerDB(dir)
+	db, err := NewBadgerDB(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	db := Database(badgerDb)
-	return db, func() {
+	t.Cleanup(func() {
 		if err := db.Close(); err != nil {
-			fmt.Println("Close of BedgerDB failed")
+			t.Error(err)
 		}
-		if err := os.RemoveAll(dir); err != nil {
-			fmt.Println("removal of temp directory test_data failed")
-		}
-	}
+	})
+	return db
 }
