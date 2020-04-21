@@ -22,8 +22,6 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-
-	"github.com/dgraph-io/badger/v2"
 )
 
 type data struct {
@@ -42,8 +40,7 @@ func testSetup() []data {
 }
 
 func TestBadgerDB_PutGetDel(t *testing.T) {
-	db, remove := newTestBadgerDB(t)
-	defer remove()
+	db := newTestBadgerDB(t)
 
 	testPutGetter(db, t)
 	testHasGetter(db, t)
@@ -55,20 +52,17 @@ func TestBadgerDB_PutGetDel(t *testing.T) {
 func testPutGetter(db Database, t *testing.T) {
 	tests := testSetup()
 	for _, v := range tests {
-		v := v
-		t.Run("PutGetter", func(t *testing.T) {
-			err := db.Put([]byte(v.input), []byte(v.input))
-			if err != nil {
-				t.Fatalf("put failed: %v", err)
-			}
-			data, err := db.Get([]byte(v.input))
-			if err != nil {
-				t.Fatalf("get failed: %v", err)
-			}
-			if !bytes.Equal(data, []byte(v.expected)) {
-				t.Fatalf("get returned wrong result, got %q expected %q", string(data), v.expected)
-			}
-		})
+		err := db.Put([]byte(v.input), []byte(v.input))
+		if err != nil {
+			t.Fatalf("put failed: %v", err)
+		}
+		data, err := db.Get([]byte(v.input))
+		if err != nil {
+			t.Fatalf("get failed: %v", err)
+		}
+		if !bytes.Equal(data, []byte(v.expected)) {
+			t.Fatalf("get returned wrong result, got %q expected %q", string(data), v.expected)
+		}
 	}
 }
 
@@ -90,20 +84,17 @@ func testUpdateGetter(db Database, t *testing.T) {
 	tests := testSetup()
 
 	for _, v := range tests {
-		v := v
-		t.Run("UpdateGetter", func(t *testing.T) {
-			err := db.Put([]byte(v.input), []byte("?"))
-			if err != nil {
-				t.Fatalf("put override failed: %v", err)
-			}
-			data, err := db.Get([]byte(v.input))
-			if err != nil {
-				t.Fatalf("get failed: %v", err)
-			}
-			if !bytes.Equal(data, []byte("?")) {
-				t.Fatalf("get returned wrong result, got %q expected ?", string(data))
-			}
-		})
+		err := db.Put([]byte(v.input), []byte("?"))
+		if err != nil {
+			t.Fatalf("put override failed: %v", err)
+		}
+		data, err := db.Get([]byte(v.input))
+		if err != nil {
+			t.Fatalf("get failed: %v", err)
+		}
+		if !bytes.Equal(data, []byte("?")) {
+			t.Fatalf("get returned wrong result, got %q expected ?", string(data))
+		}
 	}
 }
 
@@ -111,18 +102,14 @@ func testDelGetter(db Database, t *testing.T) {
 	tests := testSetup()
 
 	for _, v := range tests {
-		v := v
-		t.Run("DelGetter", func(t *testing.T) {
-			v := v
-			err := db.Del([]byte(v.input))
-			if err != nil {
-				t.Fatalf("delete %q failed: %v", v.input, err)
-			}
-			d, _ := db.Get([]byte(v.input))
-			if len(d) > 1 {
-				t.Fatalf("failed to delete value %q", v.input)
-			}
-		})
+		err := db.Del([]byte(v.input))
+		if err != nil {
+			t.Fatalf("delete %q failed: %v", v.input, err)
+		}
+		d, _ := db.Get([]byte(v.input))
+		if len(d) > 1 {
+			t.Fatalf("failed to delete value %q", v.input)
+		}
 	}
 }
 
@@ -134,8 +121,7 @@ func testGetPath(db Database, t *testing.T) {
 }
 
 func TestBadgerDB_Batch(t *testing.T) {
-	db, remove := newTestBadgerDB(t)
-	defer remove()
+	db := newTestBadgerDB(t)
 	testBatchPut(db, t)
 }
 
@@ -178,10 +164,8 @@ func testBatchPut(db Database, t *testing.T) {
 }
 
 func TestBadgerDB_Iterator(t *testing.T) {
-	db, remove := newTestBadgerDB(t)
-	defer remove()
+	db := newTestBadgerDB(t)
 
-	testNewIterator(db, t)
 	testNextKeyIterator(db, t)
 	testSeekKeyValueIterator(db, t)
 }
@@ -201,40 +185,11 @@ func testIteratorSetup(db Database, t *testing.T) {
 	}
 }
 
-func testNewIterator(db Database, t *testing.T) {
-	testIteratorSetup(db, t)
-
-	it := db.NewIterator().(*BadgerIterator)
-	defer func() {
-		if it.Released() != true {
-			it.Release()
-		}
-	}()
-	if it.init {
-		t.Fatalf("failed to init iterator")
-	}
-	if it.released {
-		t.Fatalf("failed to set release to false")
-	}
-	i, ok := interface{}(it.iter).(*badger.Iterator)
-	if !ok {
-		t.Fatalf("failed to set badger Iterator type %v", i)
-	}
-	txn, ok := interface{}(it.txn).(*badger.Txn)
-	if !ok {
-		t.Fatalf("failed to set badger Txn type %v", txn)
-	}
-}
-
 func testNextKeyIterator(db Database, t *testing.T) {
 	testIteratorSetup(db, t)
 
-	it := db.NewIterator().(*BadgerIterator)
-	defer func() {
-		if it.Released() != true {
-			it.Release()
-		}
-	}()
+	it := db.NewIterator()
+	defer it.Release()
 
 	ok := it.Next()
 	if !ok {
@@ -263,45 +218,39 @@ func testSeekKeyValueIterator(db Database, t *testing.T) {
 	kv := testKVData()
 
 	it := db.NewIterator().(*BadgerIterator)
-	defer func() {
-		if it.Released() != true {
-			it.Release()
-		}
-	}()
+	defer it.Release()
 
 	for _, k := range kv {
-		k := k
-		t.Run("SeekKeyValueIterator", func(t *testing.T) {
-			it.Seek([]byte(k.input))
-			if !bytes.Equal(it.Key(), []byte(k.input)) {
-				t.Fatalf("failed to retrieve presented key, got %v, expected %v", it.Key(), k.input)
-			}
-			it.Seek([]byte(k.input))
-			if !bytes.Equal(it.Value(), []byte(k.expected)) {
-				t.Fatalf("failed to retrieve presented key, got %v, expected %v", it.Key(), k.expected)
-			}
-		})
+		it.Seek([]byte(k.input))
+		if !bytes.Equal(it.Key(), []byte(k.input)) {
+			t.Fatalf("failed to retrieve presented key, got %v, expected %v", it.Key(), k.input)
+		}
+		it.Seek([]byte(k.input))
+		if !bytes.Equal(it.Value(), []byte(k.expected)) {
+			t.Fatalf("failed to retrieve presented key, got %v, expected %v", it.Key(), k.expected)
+		}
 	}
 }
 
-func newTestBadgerDB(t *testing.T) (Database, func()) {
-	dir, err := ioutil.TempDir(os.TempDir(), "test_data")
+func newTestBadgerDB(t *testing.T) Database {
+	dir, err := ioutil.TempDir("", "test_data")
 	if err != nil {
 		t.Fatal("failed to create temp dir: " + err.Error())
 	}
+	t.Cleanup(func() {
+		if err := os.RemoveAll(dir); err != nil {
+			t.Error(err)
+		}
+	})
 
-	badgerDb, err := NewBadgerDB(dir)
+	db, err := NewBadgerDB(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	db := Database(badgerDb)
-	return db, func() {
+	t.Cleanup(func() {
 		if err := db.Close(); err != nil {
-			fmt.Println("Close of BedgerDB failed")
+			t.Error(err)
 		}
-		if err := os.RemoveAll(dir); err != nil {
-			fmt.Println("removal of temp directory test_data failed")
-		}
-	}
+	})
+	return db
 }

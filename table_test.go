@@ -23,8 +23,7 @@ import (
 )
 
 func TestBadgerDB_TablePrefixOps(t *testing.T) {
-	db, remove := newTestBadgerDB(t)
-	defer remove()
+	db := newTestBadgerDB(t)
 
 	testPutTablesWithPrefix(db, t)
 	testHasTablesWithPrefix(db, t)
@@ -38,20 +37,17 @@ func testPutTablesWithPrefix(db Database, t *testing.T) {
 	ops := NewTable(db, "99")
 
 	for _, v := range data {
-		v := v
-		t.Run("PutTablesWithPrefix", func(t *testing.T) {
-			err := ops.Put([]byte(v.input), []byte(v.expected))
-			if err != nil {
-				t.Fatalf("put failed: %v", err)
-			}
-			data, err := ops.Get([]byte(v.input))
-			if err != nil {
-				t.Fatalf("get failed: %v", err)
-			}
-			if !bytes.Equal(data, []byte(v.expected)) {
-				t.Fatalf("get returned wrong result, got %q expected %q", string(data), v.expected)
-			}
-		})
+		err := ops.Put([]byte(v.input), []byte(v.expected))
+		if err != nil {
+			t.Fatalf("put failed: %v", err)
+		}
+		data, err := ops.Get([]byte(v.input))
+		if err != nil {
+			t.Fatalf("get failed: %v", err)
+		}
+		if !bytes.Equal(data, []byte(v.expected)) {
+			t.Fatalf("get returned wrong result, got %q expected %q", string(data), v.expected)
+		}
 	}
 }
 
@@ -75,17 +71,14 @@ func testDelTablesWithPrefix(db Database, t *testing.T) {
 	ops := NewTable(db, "99")
 
 	for _, v := range data {
-		v := v
-		t.Run("PutTablesWithPrefix", func(t *testing.T) {
-			err := ops.Del([]byte(v.input))
-			if err != nil {
-				t.Fatalf("delete %q failed: %v", v.input, err)
-			}
-			d, _ := ops.Get([]byte(v.input))
-			if len(d) > 1 {
-				t.Fatalf("failed to delete value %q", v.input)
-			}
-		})
+		err := ops.Del([]byte(v.input))
+		if err != nil {
+			t.Fatalf("delete %q failed: %v", v.input, err)
+		}
+		d, _ := ops.Get([]byte(v.input))
+		if len(d) > 1 {
+			t.Fatalf("failed to delete value %q", v.input)
+		}
 	}
 }
 
@@ -109,8 +102,7 @@ func testNewTableBatch(db Database, t *testing.T) {
 }
 
 func TestBadgerDB_TableBatchWithPrefix(t *testing.T) {
-	db, remove := newTestBadgerDB(t)
-	defer remove()
+	db := newTestBadgerDB(t)
 	testBatchTablePutWithPrefix(db, t)
 }
 
