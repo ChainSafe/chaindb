@@ -125,9 +125,9 @@ func testBatchTablePutWithPrefix(db Database, t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to add key-value to batch mapping  %q", err)
 		}
-		err = b.Write()
+		err = b.Flush()
 		if err != nil {
-			t.Fatalf("failed to write batch %q", err)
+			t.Fatalf("failed to flush batch %q", err)
 		}
 		size := b.ValueSize()
 		if size == 0 {

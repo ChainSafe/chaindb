@@ -34,7 +34,6 @@ type Batch interface {
 	Writer
 
 	ValueSize() int
-	Write() error
 	Reset()
 }
 
@@ -57,4 +56,5 @@ type Reader interface {
 type Writer interface {
 	Put(key []byte, value []byte) error
 	Del(key []byte) error
+	Flush() error
 }
