@@ -106,3 +106,8 @@ func (db *MemDatabase) NewIterator() Iterator {
 func (db *MemDatabase) Path() string {
 	return fmt.Sprintf("&memDB=%p memDB=%v\n", db.db, db.db)
 }
+
+// Flush ...
+func (db *MemDatabase) Flush() error {
+	return nil
+}

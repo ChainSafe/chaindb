@@ -147,6 +147,11 @@ func (db *BadgerDB) Del(key []byte) error {
 	})
 }
 
+// Flush commits pending writes to disk
+func (db *BadgerDB) Flush() error {
+	return db.db.Sync()
+}
+
 // Close closes a DB
 func (db *BadgerDB) Close() error {
 	db.lock.Lock()
@@ -242,8 +247,8 @@ func (b *batchWriter) Put(key, value []byte) error {
 	return nil
 }
 
-// Write performs batched writes
-func (b *batchWriter) Write() error {
+// Flush commits pending writes to disk
+func (b *batchWriter) Flush() error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
 	wb := b.db.db.NewWriteBatch()

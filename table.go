@@ -54,6 +54,11 @@ func (dt *table) Del(key []byte) error {
 	return dt.db.Del(append([]byte(dt.prefix), key...))
 }
 
+// Flush commits pending writes to disk
+func (dt *table) Flush() error {
+	return dt.db.Flush()
+}
+
 // Close closes table db
 func (dt *table) Close() error {
 	return dt.db.Close()
@@ -84,9 +89,9 @@ func (tb *tableBatch) Put(key, value []byte) error {
 	return tb.batch.Put(append([]byte(tb.prefix), key...), value)
 }
 
-// Write performs batched writes with the provided prefix
-func (tb *tableBatch) Write() error {
-	return tb.batch.Write()
+// Flush performs batched writes with the provided prefix
+func (tb *tableBatch) Flush() error {
+	return tb.batch.Flush()
 }
 
 // ValueSize returns the amount of data in the batch accounting for the given prefix
