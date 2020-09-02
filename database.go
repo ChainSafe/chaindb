@@ -149,7 +149,7 @@ func (db *BadgerDB) Del(key []byte) error {
 
 // Flush commits pending writes to disk
 func (db *BadgerDB) Flush() error {
-	return db.Flush()
+	return db.db.Sync()
 }
 
 // Close closes a DB
