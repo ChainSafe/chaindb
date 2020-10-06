@@ -70,19 +70,22 @@ func (dt *table) Close() error {
 
 // NewIterator initializes type Iterator
 func (dt *table) NewIterator() Iterator {
-	db, ok := dt.db.(*BadgerDB)
-	if !ok {
-		return nil
+	if db, ok := dt.db.(*BadgerDB); ok {
+		txn := db.db.NewTransaction(false)
+		opts := badger.DefaultIteratorOptions
+		opts.Prefix = []byte(dt.prefix)
+		iter := txn.NewIterator(opts)
+		return &BadgerIterator{
+			txn:  txn,
+			iter: iter,
+		}
 	}
 
-	txn := db.db.NewTransaction(false)
-	opts := badger.DefaultIteratorOptions
-	opts.Prefix = []byte(dt.prefix)
-	iter := txn.NewIterator(opts)
-	return &BadgerIterator{
-		txn:  txn,
-		iter: iter,
+	if db, ok := dt.db.(*MemDatabase); ok {
+		return db.NewIteratorWithPrefix([]byte(dt.prefix))
 	}
+
+	return nil
 }
 
 // Path returns table prefix
