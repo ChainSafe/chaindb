@@ -198,6 +198,9 @@ func (i *BadgerIterator) Next() bool {
 		i.iter.Rewind()
 		i.init = true
 	}
+	if !i.iter.Valid() {
+		return false
+	}
 	i.iter.Next()
 	return i.iter.Valid()
 }
