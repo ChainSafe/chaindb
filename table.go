@@ -16,6 +16,10 @@
 
 package chaindb
 
+import (
+	"github.com/dgraph-io/badger/v2"
+)
+
 type table struct {
 	db     Database
 	prefix string
@@ -66,7 +70,19 @@ func (dt *table) Close() error {
 
 // NewIterator initializes type Iterator
 func (dt *table) NewIterator() Iterator {
-	return nil
+	db, ok := dt.db.(*BadgerDB)
+	if !ok {
+		return nil
+	}
+
+	txn := db.db.NewTransaction(false)
+	opts := badger.DefaultIteratorOptions
+	opts.Prefix = []byte(dt.prefix)
+	iter := txn.NewIterator(opts)
+	return &BadgerIterator{
+		txn:  txn,
+		iter: iter,
+	}
 }
 
 // Path returns table prefix
