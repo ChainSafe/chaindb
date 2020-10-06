@@ -197,6 +197,10 @@ func (i *BadgerIterator) Next() bool {
 	if !i.init {
 		i.iter.Rewind()
 		i.init = true
+		if !i.iter.Valid() {
+			return false
+		}
+		return true
 	}
 	if !i.iter.Valid() {
 		return false
