@@ -194,14 +194,13 @@ func (i *BadgerIterator) Release() {
 func (i *BadgerIterator) Next() bool {
 	i.lock.RLock()
 	defer i.lock.RUnlock()
+
 	if !i.init {
 		i.iter.Rewind()
 		i.init = true
-		if !i.iter.Valid() {
-			return false
-		}
-		return true
+		return i.iter.Valid()
 	}
+
 	if !i.iter.Valid() {
 		return false
 	}
