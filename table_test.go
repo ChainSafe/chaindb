@@ -19,6 +19,7 @@ package chaindb
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 	"testing"
 )
 
@@ -141,5 +142,32 @@ func testBatchTablePutWithPrefix(db Database, t *testing.T) {
 		if b.ValueSize() != 0 {
 			t.Fatalf("failed to reset batch mapping to zero, got %v, expected %v", b.ValueSize(), 0)
 		}
+	}
+}
+
+func TestTable_IteratorWithPrefix(t *testing.T) {
+	db := newTestBadgerDB(t)
+	_ = db.Put([]byte("noot"), []byte("washere"))
+	tbl := NewTable(db, "test")
+
+	tests := [][]byte{
+		[]byte("asdfg"),
+		[]byte("asghj"),
+		[]byte("ertyq"),
+		[]byte("uiopl"),
+	}
+
+	for _, k := range tests {
+		_ = tbl.Put(k, k)
+	}
+
+	iter := tbl.NewIterator()
+	res := [][]byte{}
+	for iter.Next() {
+		res = append(res, iter.Key())
+	}
+
+	if !reflect.DeepEqual(tests, res) {
+		t.Fatalf("iterator did not return expected keys: got %v, expected %v", res, tests)
 	}
 }
