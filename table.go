@@ -71,9 +71,12 @@ func (dt *table) Close() error {
 // NewIterator initializes type Iterator
 func (dt *table) NewIterator() Iterator {
 	if db, ok := dt.db.(*BadgerDB); ok {
+		db.lock.Lock()
+		defer db.lock.Unlock()
+
 		txn := db.db.NewTransaction(false)
 		opts := badger.DefaultIteratorOptions
-		opts.Prefix = []byte(dt.prefix)
+		//opts.Prefix = []byte(dt.prefix)
 		iter := txn.NewIterator(opts)
 		return &BadgerIterator{
 			txn:  txn,
