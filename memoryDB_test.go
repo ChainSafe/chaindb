@@ -155,8 +155,8 @@ func TestMemoryDB_IteratorWithPrefix(t *testing.T) {
 	}
 
 	expected := NewMemDatabase()
-	_ = expected.Put([]byte("asdf"), []byte("asdf"))
-	_ = expected.Put([]byte("asgh"), []byte("asgh"))
+	_ = expected.Put([]byte("df"), []byte("asdf"))
+	_ = expected.Put([]byte("gh"), []byte("asgh"))
 
 	if !reflect.DeepEqual(res, expected) {
 		t.Fatalf("iterator failed to create identical mem database")

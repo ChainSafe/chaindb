@@ -117,7 +117,7 @@ func (db *MemDatabase) NewIteratorWithPrefix(prefix []byte) Iterator {
 	for k, v := range db.db {
 		key := []byte(k)
 		if bytes.Equal(key[:len(prefix)], prefix) {
-			arr = append(arr, [2][]byte{key, v})
+			arr = append(arr, [2][]byte{removePrefix(key, prefix), v})
 		}
 	}
 	return &MemDatabaseIterator{
