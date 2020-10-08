@@ -17,6 +17,7 @@
 package chaindb
 
 import (
+	"bytes"
 	"fmt"
 	"sync"
 )
@@ -99,7 +100,30 @@ func (db *MemDatabase) NewBatch() Batch {
 
 // NewIterator ...
 func (db *MemDatabase) NewIterator() Iterator {
-	return nil
+	arr := make([][2][]byte, len(db.db))
+	i := 0
+	for k, v := range db.db {
+		arr[i] = [2][]byte{[]byte(k), v}
+		i++
+	}
+	return &MemDatabaseIterator{
+		arr: arr,
+		idx: -1,
+	}
+}
+
+func (db *MemDatabase) NewIteratorWithPrefix(prefix []byte) Iterator {
+	arr := [][2][]byte{}
+	for k, v := range db.db {
+		key := []byte(k)
+		if bytes.Equal(key[:len(prefix)], prefix) {
+			arr = append(arr, [2][]byte{removePrefix(key, prefix), v})
+		}
+	}
+	return &MemDatabaseIterator{
+		arr: arr,
+		idx: -1,
+	}
 }
 
 // Path ...
@@ -111,3 +135,29 @@ func (db *MemDatabase) Path() string {
 func (db *MemDatabase) Flush() error {
 	return nil
 }
+
+var _ Iterator = (*MemDatabaseIterator)(nil)
+
+type MemDatabaseIterator struct {
+	arr [][2][]byte
+	idx int
+}
+
+func (iter *MemDatabaseIterator) Next() bool {
+	if iter.idx >= len(iter.arr)-1 {
+		return false
+	}
+
+	iter.idx++
+	return true
+}
+
+func (iter *MemDatabaseIterator) Key() []byte {
+	return iter.arr[iter.idx][0]
+}
+
+func (iter *MemDatabaseIterator) Value() []byte {
+	return iter.arr[iter.idx][1]
+}
+
+func (iter *MemDatabaseIterator) Release() {}

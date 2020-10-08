@@ -16,6 +16,14 @@
 
 package chaindb
 
+import (
+	"bytes"
+
+	log "github.com/ChainSafe/log15"
+	"github.com/dgraph-io/badger/v2"
+	"github.com/golang/snappy"
+)
+
 type table struct {
 	db     Database
 	prefix string
@@ -66,12 +74,133 @@ func (dt *table) Close() error {
 
 // NewIterator initializes type Iterator
 func (dt *table) NewIterator() Iterator {
+	if db, ok := dt.db.(*BadgerDB); ok {
+		db.lock.Lock()
+		defer db.lock.Unlock()
+
+		txn := db.db.NewTransaction(false)
+		opts := badger.DefaultIteratorOptions
+		iter := txn.NewIterator(opts)
+		tableIter := &tableIterator{
+			prefix: []byte(dt.prefix),
+		}
+		tableIter.txn = txn
+		tableIter.iter = iter
+		return tableIter
+	}
+
+	if db, ok := dt.db.(*MemDatabase); ok {
+		return db.NewIteratorWithPrefix([]byte(dt.prefix))
+	}
+
 	return nil
 }
 
 // Path returns table prefix
 func (dt *table) Path() string {
 	return dt.prefix
+}
+
+func removePrefix(key, prefix []byte) []byte {
+	if bytes.Equal(key[:len(prefix)], prefix) {
+		return key[len(prefix):]
+	}
+
+	return key
+}
+
+type tableIterator struct {
+	BadgerIterator
+	prefix []byte
+}
+
+// Release closes the iterator and discards the created transaction.
+func (i *tableIterator) Release() {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	i.iter.Close()
+	i.txn.Discard()
+}
+
+// Next rewinds the iterator to the zero-th position if uninitialized, and then will advance the iterator by one
+// returns bool to ensure access to the item
+func (i *tableIterator) Next() bool {
+	i.lock.RLock()
+	defer i.lock.RUnlock()
+
+	loopUntilNext := func() {
+		key := i.rawKey()
+		for {
+			if bytes.Equal(key[:len(i.prefix)], i.prefix) || !i.iter.Valid() {
+				break
+			}
+
+			if i.iter.Valid() {
+				i.iter.Next()
+			}
+
+			if i.iter.Valid() {
+				key = i.rawKey()
+			}
+		}
+	}
+
+	if !i.init {
+		i.iter.Rewind()
+		i.init = true
+		loopUntilNext()
+		return i.iter.Valid()
+	}
+
+	if !i.iter.Valid() {
+		return false
+	}
+
+	i.iter.Next()
+	if !i.iter.Valid() {
+		return false
+	}
+
+	loopUntilNext()
+	return i.iter.Valid()
+}
+
+// Seek will look for the provided key if present and go to that position. If
+// absent, it would seek to the next smallest key
+func (i *tableIterator) Seek(key []byte) {
+	i.lock.RLock()
+	defer i.lock.RUnlock()
+	i.iter.Seek(snappy.Encode(nil, key))
+}
+
+func (i *tableIterator) rawKey() []byte {
+	i.lock.RLock()
+	defer i.lock.RUnlock()
+	ret, err := snappy.Decode(nil, i.iter.Item().Key())
+	if err != nil {
+		log.Warn("key retrieval error ", "error", err)
+	}
+	return ret
+}
+
+// Key returns an item key
+func (i *tableIterator) Key() []byte {
+	return removePrefix(i.rawKey(), i.prefix)
+}
+
+// Value returns a copy of the value of the item
+func (i *tableIterator) Value() []byte {
+	i.lock.RLock()
+	defer i.lock.RUnlock()
+	val, err := i.iter.Item().ValueCopy(nil)
+	if err != nil {
+		log.Warn("value retrieval error ", "error", err)
+	}
+	ret, err := snappy.Decode(nil, val)
+	if err != nil {
+		log.Warn("value decoding error ", "error", err)
+	}
+	return ret
 }
 
 // NewTableBatch returns a Batch object which prefixes all keys with a given string.

@@ -18,6 +18,7 @@ package chaindb
 
 import (
 	"bytes"
+	"reflect"
 	"testing"
 )
 
@@ -103,5 +104,61 @@ func testDelGet(db *MemDatabase, t *testing.T) {
 		if len(d) > 1 {
 			t.Fatalf("failed to delete value %q", v.input)
 		}
+	}
+}
+
+func TestMemoryDB_Iterator(t *testing.T) {
+	memDB := NewMemDatabase()
+	tests := testData()
+
+	for _, v := range tests {
+		err := memDB.Put([]byte(v.input), []byte(v.input))
+		if err != nil {
+			t.Fatalf("put failed: %v", err)
+		}
+	}
+
+	iter := memDB.NewIterator()
+	res := NewMemDatabase()
+	for iter.Next() {
+		err := res.Put(iter.Key(), iter.Value())
+		if err != nil {
+			t.Fatalf("put failed: %v", err)
+		}
+	}
+
+	if !reflect.DeepEqual(res, memDB) {
+		t.Fatalf("iterator failed to create identical mem database")
+	}
+}
+
+func TestMemoryDB_IteratorWithPrefix(t *testing.T) {
+	memDB := NewMemDatabase()
+	tests := [][]byte{
+		[]byte("asdf"),
+		[]byte("asgh"),
+		[]byte("erty"),
+		[]byte("uiop"),
+	}
+
+	for _, k := range tests {
+		_ = memDB.Put(k, k)
+	}
+
+	iter := memDB.NewIteratorWithPrefix([]byte("as"))
+	res := NewMemDatabase()
+	for iter.Next() {
+		err := res.Put(iter.Key(), iter.Value())
+		if err != nil {
+			t.Fatalf("put failed: %v", err)
+		}
+	}
+
+	expected := NewMemDatabase()
+	_ = expected.Put([]byte("df"), []byte("asdf"))
+	_ = expected.Put([]byte("gh"), []byte("asgh"))
+
+	if !reflect.DeepEqual(res, expected) {
+		t.Fatalf("iterator failed to create identical mem database")
 	}
 }
