@@ -244,6 +244,5 @@ func (tb *tableBatch) Del(k []byte) error {
 }
 
 func (dt *table) Subscribe(ctx context.Context, cb func(kv *badger.KVList) error, prefixes []byte) error {
-	// TODO implement this
-	panic("implement me")
+	return dt.db.Subscribe(ctx, cb, prefixes)
 }
