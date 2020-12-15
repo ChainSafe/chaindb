@@ -102,7 +102,7 @@ func (dt *table) Path() string {
 }
 
 func removePrefix(key, prefix []byte) []byte {
-	if len(key) < len(i.prefix) {
+	if len(key) < len(prefix) {
 		return key
 	}
 
