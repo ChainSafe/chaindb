@@ -131,11 +131,16 @@ func (i *tableIterator) Next() bool {
 	loopUntilNext := func() {
 		key := i.rawKey()
 		for {
-			if len(key) < len(i.prefix) {
-				i.iter.Next()
+			if !i.iter.Valid() {
+				break
 			}
 
-			if bytes.Equal(key[:len(i.prefix)], i.prefix) || !i.iter.Valid() {
+			if len(key) < len(i.prefix) {
+				i.iter.Next()
+				continue
+			}
+
+			if bytes.Equal(key[:len(i.prefix)], i.prefix) {
 				break
 			}
 
