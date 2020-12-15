@@ -18,9 +18,13 @@ package chaindb
 
 import (
 	"bytes"
+	"context"
 	"fmt"
+	"github.com/dgraph-io/badger/v2"
 	"io/ioutil"
+	"log"
 	"os"
+	"sync"
 	"testing"
 )
 
@@ -253,4 +257,71 @@ func newTestBadgerDB(t *testing.T) Database {
 		}
 	})
 	return db
+}
+
+func ExampleDB_Subscribe() {
+	prefix := []byte{'a'}
+
+	// This key should be printed, since it matches the prefix.
+	aKey := []byte("a-key")
+	aValue := []byte("a-value")
+
+	// This key should not be printed.
+	bKey := []byte("b-key")
+	bValue := []byte("b-value")
+
+	// Open the DB.
+	dir, err := ioutil.TempDir("", "badger-test")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(dir); err != nil {
+			log.Fatal(err)
+		}
+	}()
+	db, err := NewBadgerDB(dir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// Create the context here so we can cancel it after sending the writes.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Use the WaitGroup to make sure we wait for the subscription to stop before continuing.
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		cb := func(kvs *badger.KVList) error {
+			for _, kv := range kvs.Kv {
+				fmt.Printf("%s is now set to %s\n", kv.Key, kv.Value)
+			}
+			return nil
+		}
+		if err := db.Subscribe(ctx, cb, prefix); err != nil && err != context.Canceled {
+			log.Fatal(err)
+		}
+		log.Printf("subscription closed")
+	}()
+
+	// Write both keys, but only one should be printed in the Output.
+	err = db.db.Update(func(txn *badger.Txn) error { return txn.Set(aKey, aValue) })
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = db.db.Update(func(txn *badger.Txn) error { return txn.Set(bKey, bValue) })
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Printf("stopping subscription")
+	cancel()
+	log.Printf("waiting for subscription to close")
+	wg.Wait()
+	// Output:
+	// a-key is now set to a-value
+
 }
