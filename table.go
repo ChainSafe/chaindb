@@ -102,6 +102,10 @@ func (dt *table) Path() string {
 }
 
 func removePrefix(key, prefix []byte) []byte {
+	if len(key) < len(i.prefix) {
+		return key
+	}
+
 	if bytes.Equal(key[:len(prefix)], prefix) {
 		return key[len(prefix):]
 	}
@@ -134,7 +138,7 @@ func (i *tableIterator) Next() bool {
 			if len(key) < len(i.prefix) {
 				break
 			}
-			
+
 			if bytes.Equal(key[:len(i.prefix)], i.prefix) || !i.iter.Valid() {
 				break
 			}
