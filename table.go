@@ -137,6 +137,9 @@ func (i *tableIterator) Next() bool {
 
 			if len(key) < len(i.prefix) {
 				i.iter.Next()
+				if i.iter.Valid() {
+					key = i.rawKey()
+				}
 				continue
 			}
 
