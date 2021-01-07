@@ -22,7 +22,6 @@ import (
 
 	log "github.com/ChainSafe/log15"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/golang/snappy"
 )
 
 // BadgerDB contains directory path to data and db instance
@@ -89,7 +88,7 @@ func (db *BadgerDB) Put(key []byte, value []byte) error {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 	return db.db.Update(func(txn *badger.Txn) error {
-		err := txn.Set(snappy.Encode(nil, key), snappy.Encode(nil, value))
+		err := txn.Set(key, value)
 		return err
 	})
 }
@@ -99,7 +98,7 @@ func (db *BadgerDB) Has(key []byte) (exists bool, err error) {
 	db.lock.RLock()
 	defer db.lock.RUnlock()
 	err = db.db.View(func(txn *badger.Txn) error {
-		item, errr := txn.Get(snappy.Encode(nil, key))
+		item, errr := txn.Get(key)
 		if item != nil {
 			exists = true
 		}
@@ -117,15 +116,14 @@ func (db *BadgerDB) Get(key []byte) (data []byte, err error) {
 	db.lock.RLock()
 	defer db.lock.RUnlock()
 	err = db.db.View(func(txn *badger.Txn) error {
-		item, e := txn.Get(snappy.Encode(nil, key))
+		item, e := txn.Get(key)
 		if e != nil {
 			return e
 		}
-		val, e := item.ValueCopy(nil)
+		data, e = item.ValueCopy(nil)
 		if e != nil {
 			return e
 		}
-		data, _ = snappy.Decode(nil, val)
 		return nil
 	})
 	if err != nil {
@@ -139,7 +137,7 @@ func (db *BadgerDB) Del(key []byte) error {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 	return db.db.Update(func(txn *badger.Txn) error {
-		err := txn.Delete(snappy.Encode(nil, key))
+		err := txn.Delete(key)
 		if err == badger.ErrKeyNotFound {
 			err = nil
 		}
@@ -213,18 +211,14 @@ func (i *BadgerIterator) Next() bool {
 func (i *BadgerIterator) Seek(key []byte) {
 	i.lock.RLock()
 	defer i.lock.RUnlock()
-	i.iter.Seek(snappy.Encode(nil, key))
+	i.iter.Seek(key)
 }
 
 // Key returns an item key
 func (i *BadgerIterator) Key() []byte {
 	i.lock.RLock()
 	defer i.lock.RUnlock()
-	ret, err := snappy.Decode(nil, i.iter.Item().Key())
-	if err != nil {
-		log.Warn("key retrieval error ", "error", err)
-	}
-	return ret
+	return i.iter.Item().Key()
 }
 
 // Value returns a copy of the value of the item
@@ -235,20 +229,14 @@ func (i *BadgerIterator) Value() []byte {
 	if err != nil {
 		log.Warn("value retrieval error ", "error", err)
 	}
-	ret, err := snappy.Decode(nil, val)
-	if err != nil {
-		log.Warn("value decoding error ", "error", err)
-	}
-	return ret
+	return val
 }
 
 // Put encodes key-values and adds them to a mapping for batch writes, sets the size of item value
 func (b *batchWriter) Put(key, value []byte) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
-	encodedKey := snappy.Encode(nil, key)
-	encodedVal := snappy.Encode(nil, value)
-	b.b[string(encodedKey)] = encodedVal
+	b.b[string(key)] = value
 	b.size += len(value)
 	return nil
 }

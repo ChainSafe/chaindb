@@ -18,10 +18,8 @@ package chaindb
 
 import (
 	"bytes"
-
 	log "github.com/ChainSafe/log15"
 	"github.com/dgraph-io/badger/v2"
-	"github.com/golang/snappy"
 )
 
 type table struct {
@@ -182,17 +180,13 @@ func (i *tableIterator) Next() bool {
 func (i *tableIterator) Seek(key []byte) {
 	i.lock.RLock()
 	defer i.lock.RUnlock()
-	i.iter.Seek(snappy.Encode(nil, key))
+	i.iter.Seek(key)
 }
 
 func (i *tableIterator) rawKey() []byte {
 	i.lock.RLock()
 	defer i.lock.RUnlock()
-	ret, err := snappy.Decode(nil, i.iter.Item().Key())
-	if err != nil {
-		log.Warn("key retrieval error ", "error", err)
-	}
-	return ret
+	return i.iter.Item().Key()
 }
 
 // Key returns an item key
@@ -208,11 +202,7 @@ func (i *tableIterator) Value() []byte {
 	if err != nil {
 		log.Warn("value retrieval error ", "error", err)
 	}
-	ret, err := snappy.Decode(nil, val)
-	if err != nil {
-		log.Warn("value decoding error ", "error", err)
-	}
-	return ret
+	return val
 }
 
 // NewTableBatch returns a Batch object which prefixes all keys with a given string.
