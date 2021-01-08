@@ -307,12 +307,13 @@ func ExampleDB_Subscribe() {
 		log.Printf("subscription closed")
 	}()
 
+
 	// Write both keys, but only one should be printed in the Output.
-	err = db.db.Update(func(txn *badger.Txn) error { return txn.Set(aKey, aValue) })
+	err = db.Put(aKey, aValue)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = db.db.Update(func(txn *badger.Txn) error { return txn.Set(bKey, bValue) })
+	err = db.Put(bKey, bValue)
 	if err != nil {
 		log.Fatal(err)
 	}
