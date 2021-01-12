@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/dgraph-io/badger/v2"
 	"io/ioutil"
 	"log"
 	"os"
@@ -295,7 +294,7 @@ func ExampleDB_Subscribe() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		cb := func(kvs *badger.KVList) error {
+		cb := func(kvs *KVList) error {
 			for _, kv := range kvs.Kv {
 				fmt.Printf("%s is now set to %s\n", kv.Key, kv.Value)
 			}
