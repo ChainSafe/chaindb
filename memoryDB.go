@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/dgraph-io/badger/v2"
 	"sync"
 )
 
@@ -164,7 +163,7 @@ func (iter *MemDatabaseIterator) Value() []byte {
 
 func (iter *MemDatabaseIterator) Release() {}
 
-func (db *MemDatabase) Subscribe(ctx context.Context, cb func(kv *badger.KVList) error, prefixes []byte) error {
+func (db *MemDatabase) Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []byte) error {
 	// TODO this will be removed when issue #12 is implemented
 	panic("implement me")
 }

@@ -247,6 +247,6 @@ func (tb *tableBatch) Del(k []byte) error {
 	return nil
 }
 
-func (dt *table) Subscribe(ctx context.Context, cb func(kv *badger.KVList) error, prefixes []byte) error {
+func (dt *table) Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []byte) error {
 	return dt.db.Subscribe(ctx, cb, prefixes)
 }

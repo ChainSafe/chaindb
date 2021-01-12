@@ -32,6 +32,8 @@ type BadgerDB struct {
 	lock   sync.RWMutex
 }
 
+type KVList = badger.KVList
+
 var _ Database = (*BadgerDB)(nil)
 
 // Config defines configurations for BadgerService instance
@@ -162,7 +164,7 @@ func (db *BadgerDB) Close() error {
 }
 
 // Subscribe to watch for changes for the given prefixes
-func (db *BadgerDB) Subscribe(ctx context.Context, cb func(kv *badger.KVList) error, prefixes []byte) error {
+func (db *BadgerDB) Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []byte) error {
 	return db.db.Subscribe(ctx, cb, prefixes)
 }
 

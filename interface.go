@@ -18,7 +18,6 @@ package chaindb
 
 import (
 	"context"
-	"github.com/dgraph-io/badger/v2"
 	"io"
 )
 
@@ -31,7 +30,7 @@ type Database interface {
 	NewBatch() Batch
 	Path() string
 	NewIterator() Iterator
-	Subscribe(ctx context.Context, cb func(kv *badger.KVList) error, prefixes []byte) error
+	Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []byte) error
 }
 
 // Batch is a write-only operation.
