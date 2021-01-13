@@ -26,27 +26,30 @@ import (
 
 // BadgerDB contains directory path to data and db instance
 type BadgerDB struct {
-	config Config
+	config *Config
 	db     *badger.DB
 	lock   sync.RWMutex
 }
 
 var _ Database = (*BadgerDB)(nil)
 
-// Config defines configurations for BadgerService instance
+// Config defines configurations for BadgerDB instance
 type Config struct {
-	DataDir string
+	DataDir  string
+	InMemory bool
 }
 
 // NewBadgerDB initializes badgerDB instance
-func NewBadgerDB(file string) (*BadgerDB, error) {
-	opts := badger.DefaultOptions(file)
-	opts.ValueDir = file
+func NewBadgerDB(cfg *Config) (*BadgerDB, error) {
+	opts := badger.DefaultOptions(cfg.DataDir)
+	opts.ValueDir = cfg.DataDir
 	opts.Logger = nil
 	opts.WithSyncWrites(false)
 	opts.WithNumCompactors(20)
+	// opts.WithBlockCacheSize(1 << 16) // TODO: add caching
+	opts.WithInMemory(cfg.InMemory)
 
-	if err := os.MkdirAll(file, os.ModePerm); err != nil {
+	if err := os.MkdirAll(cfg.DataDir, os.ModePerm); err != nil {
 		return nil, err
 	}
 	db, err := badger.Open(opts)
@@ -55,10 +58,8 @@ func NewBadgerDB(file string) (*BadgerDB, error) {
 	}
 
 	return &BadgerDB{
-		config: Config{
-			DataDir: file,
-		},
-		db: db,
+		config: cfg,
+		db:     db,
 	}, nil
 }
 

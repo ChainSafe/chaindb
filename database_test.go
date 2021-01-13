@@ -243,7 +243,11 @@ func newTestBadgerDB(t *testing.T) Database {
 		}
 	})
 
-	db, err := NewBadgerDB(dir)
+	cfg := &Config{
+		DataDir: dir,
+	}
+
+	db, err := NewBadgerDB(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}

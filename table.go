@@ -87,10 +87,6 @@ func (dt *table) NewIterator() Iterator {
 		return tableIter
 	}
 
-	if db, ok := dt.db.(*MemDatabase); ok {
-		return db.NewIteratorWithPrefix([]byte(dt.prefix))
-	}
-
 	return nil
 }
 
