@@ -246,7 +246,11 @@ func newTestBadgerDB(t *testing.T) Database {
 		}
 	})
 
-	db, err := NewBadgerDB(dir)
+	cfg := &Config{
+		DataDir: dir,
+	}
+
+	db, err := NewBadgerDB(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -279,7 +283,9 @@ func ExampleDB_Subscribe() {
 			log.Fatal(err)
 		}
 	}()
-	db, err := NewBadgerDB(dir)
+	db, err := NewBadgerDB(&Config{
+		DataDir: dir,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -305,7 +311,6 @@ func ExampleDB_Subscribe() {
 		}
 		log.Printf("subscription closed")
 	}()
-
 
 	// Write both keys, but only one should be printed in the Output.
 	err = db.Put(aKey, aValue)
