@@ -283,7 +283,9 @@ func ExampleDB_Subscribe() {
 			log.Fatal(err)
 		}
 	}()
-	db, err := NewBadgerDB(dir)
+	db, err := NewBadgerDB(&Config{
+		DataDir: dir,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
