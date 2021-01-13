@@ -18,6 +18,9 @@ package chaindb
 
 import (
 	"bytes"
+
+	"context"
+
 	log "github.com/ChainSafe/log15"
 	"github.com/dgraph-io/badger/v2"
 )
@@ -238,4 +241,8 @@ func (tb *tableBatch) Del(k []byte) error {
 		return err
 	}
 	return nil
+}
+
+func (dt *table) Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []byte) error {
+	return dt.db.Subscribe(ctx, cb, prefixes)
 }
