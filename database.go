@@ -17,6 +17,7 @@
 package chaindb
 
 import (
+	"context"
 	"os"
 	"sync"
 
@@ -30,6 +31,8 @@ type BadgerDB struct {
 	db     *badger.DB
 	lock   sync.RWMutex
 }
+
+type KVList = badger.KVList
 
 var _ Database = (*BadgerDB)(nil)
 
@@ -158,6 +161,11 @@ func (db *BadgerDB) Close() error {
 		return err
 	}
 	return nil
+}
+
+// Subscribe to watch for changes for the given prefixes
+func (db *BadgerDB) Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []byte) error {
+	return db.db.Subscribe(ctx, cb, prefixes)
 }
 
 // BadgerIterator struct contains a transaction, iterator and init.

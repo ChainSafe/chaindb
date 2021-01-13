@@ -16,7 +16,10 @@
 
 package chaindb
 
-import "io"
+import (
+	"context"
+	"io"
+)
 
 // Database wraps all database operations. All methods are safe for concurrent use.
 type Database interface {
@@ -27,6 +30,7 @@ type Database interface {
 	NewBatch() Batch
 	Path() string
 	NewIterator() Iterator
+	Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []byte) error
 }
 
 // Batch is a write-only operation.

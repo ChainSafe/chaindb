@@ -18,6 +18,7 @@ package chaindb
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"sync"
 )
@@ -161,3 +162,8 @@ func (iter *MemDatabaseIterator) Value() []byte {
 }
 
 func (iter *MemDatabaseIterator) Release() {}
+
+func (db *MemDatabase) Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []byte) error {
+	// TODO this will be removed when issue #12 is implemented
+	panic("implement me")
+}
