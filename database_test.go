@@ -82,7 +82,7 @@ func testCompressSetup(t *testing.T) map[string]string {
 	return testMap
 }
 
-func dirSizeMB(t *testing.T,path string) float64 {
+func dirSizeMB(t *testing.T, path string) float64 {
 	t.Helper()
 	var dirSize int64 = 0
 	readSize := func(path string, file os.FileInfo, err error) error {
@@ -97,9 +97,9 @@ func dirSizeMB(t *testing.T,path string) float64 {
 	return sizeMB
 }
 
-func TestDBCompression(t *testing.T){
+func TestDBCompression(t *testing.T) {
 	var tests = testCompressSetup(t)
-	test := func(t *testing.T,compress bool,folderName string){
+	test := func(t *testing.T, compress bool, folderName string) {
 		db := newBadgerCompressed(t, compress, folderName)
 		defer os.RemoveAll(folderName)
 
@@ -109,21 +109,21 @@ func TestDBCompression(t *testing.T){
 			require.NoError(t, err)
 		}
 		cmpDuration := time.Since(cmpStart)
-		t.Logf("%s DB duration in seconds %f",folderName ,cmpDuration.Seconds())
+		t.Logf("%s DB duration in seconds %f", folderName, cmpDuration.Seconds())
 
 		err := db.Close()
 		require.NoError(t, err)
 
-		size := dirSizeMB(t,folderName)
+		size := dirSizeMB(t, folderName)
 		require.NoError(t, err)
-		t.Logf("%s DB size in MB %f",folderName,size)
+		t.Logf("%s DB size in MB %f", folderName, size)
 	}
 
-	t.Run("compressed data",func(t *testing.T){
-		test(t,true,"compressed")
+	t.Run("compressed data", func(t *testing.T) {
+		test(t, true, "compressed")
 	})
-	t.Run("uncompressed data",func(t *testing.T){
-		test(t,false,"uncompressed")
+	t.Run("uncompressed data", func(t *testing.T) {
+		test(t, false, "uncompressed")
 	})
 }
 
