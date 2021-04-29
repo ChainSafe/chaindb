@@ -85,26 +85,22 @@ func testCompressSetup(t *testing.T) map[string]string {
 func dirSizeMB(t *testing.T,path string) float64 {
 	t.Helper()
 	var dirSize int64 = 0
-
 	readSize := func(path string, file os.FileInfo, err error) error {
 		if !file.IsDir() {
 			dirSize += file.Size()
 		}
-
 		return nil
 	}
 
 	filepath.Walk(path, readSize)
-
 	sizeMB := float64(dirSize) / 1024.0 / 1024.0
-
 	return sizeMB
 }
 
-func TestCompressionDB(t *testing.T){
+func TestDBCompression(t *testing.T){
 	var tests = testCompressSetup(t)
 	test := func(t *testing.T,compress bool,folderName string){
-		db := newTestBadgerCompressDB(t, compress, folderName)
+		db := newBadgerCompressed(t, compress, folderName)
 		defer os.RemoveAll(folderName)
 
 		cmpStart := time.Now()
@@ -341,7 +337,7 @@ func newTestBadgerDB(t *testing.T) Database {
 	return db
 }
 
-func newTestBadgerCompressDB(t *testing.T, compress bool, filePath string) Database {
+func newBadgerCompressed(t *testing.T, compress bool, filePath string) Database {
 	t.Helper()
 
 	currentDir, err := os.Getwd()

@@ -55,7 +55,6 @@ func NewBadgerDB(cfg *Config) (*BadgerDB, error) {
 	opts.WithInMemory(cfg.InMemory)
 
 	if cfg.Compress {
-		opts.ValueThreshold = 1 << 20
 		opts.WithCompression(options.Snappy)
 	}
 	if err := os.MkdirAll(cfg.DataDir, os.ModePerm); err != nil {
