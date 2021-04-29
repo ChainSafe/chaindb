@@ -22,14 +22,30 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 type data struct {
 	input    string
 	expected string
+}
+
+var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randSeq(n int) string {
+	b := make([]rune, n)
+	rand.Seed(time.Now().UnixNano())
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }
 
 func testSetup() []data {
@@ -50,6 +66,69 @@ func TestBadgerDB_PutGetDel(t *testing.T) {
 	testUpdateGetter(db, t)
 	testDelGetter(db, t)
 	testGetPath(db, t)
+}
+
+func testCompressSetup(t *testing.T) map[string]string {
+	t.Helper()
+	numEntries := 1000
+	testMap := make(map[string]string, numEntries)
+
+	var key string
+	var val = randSeq(1 << 15)
+	for i := 0; i < numEntries; i++ {
+		key = randSeq(64)
+		testMap[key] = val
+	}
+	return testMap
+}
+
+func dirSizeMB(t *testing.T,path string) float64 {
+	t.Helper()
+	var dirSize int64 = 0
+
+	readSize := func(path string, file os.FileInfo, err error) error {
+		if !file.IsDir() {
+			dirSize += file.Size()
+		}
+
+		return nil
+	}
+
+	filepath.Walk(path, readSize)
+
+	sizeMB := float64(dirSize) / 1024.0 / 1024.0
+
+	return sizeMB
+}
+
+func TestCompressionDB(t *testing.T){
+	var tests = testCompressSetup(t)
+	test := func(t *testing.T,compress bool,folderName string){
+		db := newTestBadgerCompressDB(t, compress, folderName)
+		defer os.RemoveAll(folderName)
+
+		cmpStart := time.Now()
+		for k, v := range tests {
+			err := db.Put([]byte(k), []byte(v))
+			require.NoError(t, err)
+		}
+		cmpDuration := time.Since(cmpStart)
+		t.Logf("%s DB duration in seconds %f",folderName ,cmpDuration.Seconds())
+
+		err := db.Close()
+		require.NoError(t, err)
+
+		size := dirSizeMB(t,folderName)
+		require.NoError(t, err)
+		t.Logf("%s DB size in MB %f",folderName,size)
+	}
+
+	t.Run("compressed data",func(t *testing.T){
+		test(t,true,"compressed")
+	})
+	t.Run("uncompressed data",func(t *testing.T){
+		test(t,false,"uncompressed")
+	})
 }
 
 func testPutGetter(db Database, t *testing.T) {
@@ -259,6 +338,30 @@ func newTestBadgerDB(t *testing.T) Database {
 			t.Error(err)
 		}
 	})
+	return db
+}
+
+func newTestBadgerCompressDB(t *testing.T, compress bool, filePath string) Database {
+	t.Helper()
+
+	currentDir, err := os.Getwd()
+	require.NoError(t, err)
+
+	fp := filepath.Join(currentDir, fmt.Sprintf("../%s", filePath))
+	os.RemoveAll(filepath.Clean(fp))
+
+	_, err = os.Create(filepath.Clean(fp))
+	require.NoError(t, err)
+
+	cfg := &Config{
+		DataDir:  filePath,
+		Compress: compress,
+		InMemory: false,
+	}
+
+	db, err := NewBadgerDB(cfg)
+	require.NoError(t, err)
+
 	return db
 }
 
