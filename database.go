@@ -23,6 +23,7 @@ import (
 
 	log "github.com/ChainSafe/log15"
 	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v2/options"
 )
 
 // BadgerDB contains directory path to data and db instance
@@ -40,6 +41,7 @@ var _ Database = (*BadgerDB)(nil)
 type Config struct {
 	DataDir  string
 	InMemory bool
+	Compress bool
 }
 
 // NewBadgerDB initializes badgerDB instance
@@ -52,6 +54,9 @@ func NewBadgerDB(cfg *Config) (*BadgerDB, error) {
 	// opts.WithBlockCacheSize(1 << 16) // TODO: add caching
 	opts.WithInMemory(cfg.InMemory)
 
+	if cfg.Compress {
+		opts.WithCompression(options.Snappy)
+	}
 	if err := os.MkdirAll(cfg.DataDir, os.ModePerm); err != nil {
 		return nil, err
 	}
