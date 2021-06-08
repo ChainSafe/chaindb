@@ -78,17 +78,19 @@ func (db *BadgerDB) Path() string {
 
 // Batch struct contains a database instance, key-value mapping for batch writes and length of item value for batch write
 type batchWriter struct {
-	db   *BadgerDB
-	b    map[string][]byte
-	size int
-	lock sync.RWMutex
+	db      *BadgerDB
+	updates map[string][]byte
+	deletes map[string]struct{}
+	size    int
+	lock    sync.RWMutex
 }
 
 // NewBatch returns batchWriter with a badgerDB instance and an initialized mapping
 func (db *BadgerDB) NewBatch() Batch {
 	return &batchWriter{
-		db: db,
-		b:  make(map[string][]byte),
+		db:      db,
+		updates: make(map[string][]byte),
+		deletes: make(map[string]struct{}),
 	}
 }
 
@@ -167,6 +169,11 @@ func (db *BadgerDB) Close() error {
 		return err
 	}
 	return nil
+}
+
+// ClearAll would delete all the data stored in DB.
+func (db *BadgerDB) ClearAll() error {
+	return db.db.DropAll()
 }
 
 // Subscribe to watch for changes for the given prefixes
@@ -250,8 +257,22 @@ func (i *BadgerIterator) Value() []byte {
 func (b *batchWriter) Put(key, value []byte) error {
 	b.lock.Lock()
 	defer b.lock.Unlock()
-	b.b[string(key)] = value
+
+	strKey := string(key)
+	b.updates[strKey] = value
 	b.size += len(value)
+	delete(b.deletes, strKey)
+	return nil
+}
+
+// Del removes the key from the batch and database
+func (b *batchWriter) Del(key []byte) error {
+	b.lock.Lock()
+	defer b.lock.Unlock()
+
+	strKey := string(key)
+	b.deletes[strKey] = struct{}{}
+	delete(b.updates, strKey)
 	return nil
 }
 
@@ -262,8 +283,14 @@ func (b *batchWriter) Flush() error {
 	wb := b.db.db.NewWriteBatch()
 	defer wb.Cancel()
 
-	for k, v := range b.b {
+	for k, v := range b.updates {
 		if err := wb.Set([]byte(k), v); err != nil {
+			return err
+		}
+	}
+
+	for k := range b.deletes {
+		if err := wb.Delete([]byte(k)); err != nil {
 			return err
 		}
 	}
@@ -275,21 +302,11 @@ func (b *batchWriter) ValueSize() int {
 	return b.size
 }
 
-// Del removes the key from the batch and database
-func (b *batchWriter) Del(key []byte) error {
-	b.lock.Lock()
-	defer b.lock.Unlock()
-	if err := b.db.db.NewWriteBatch().Delete(key); err != nil {
-		return err
-	}
-	b.size++
-	return nil
-}
-
 // Reset clears batch key-values and resets the size to zero
 func (b *batchWriter) Reset() {
 	b.lock.Lock()
 	defer b.lock.Unlock()
-	b.b = make(map[string][]byte)
+	b.updates = make(map[string][]byte)
+	b.deletes = make(map[string]struct{})
 	b.size = 0
 }

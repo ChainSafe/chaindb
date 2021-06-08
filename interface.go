@@ -31,6 +31,7 @@ type Database interface {
 	Path() string
 	NewIterator() Iterator
 	Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []byte) error
+	ClearAll() error
 }
 
 // Batch is a write-only operation.

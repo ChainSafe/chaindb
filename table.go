@@ -18,8 +18,8 @@ package chaindb
 
 import (
 	"bytes"
-
 	"context"
+	"fmt"
 
 	log "github.com/ChainSafe/log15"
 	"github.com/dgraph-io/badger/v2"
@@ -41,6 +41,11 @@ type tableBatch struct {
 // string.
 func NewTable(db Database, prefix string) Database {
 	return &table{db: db, prefix: prefix}
+}
+
+// ClearAll - This method is not implemented for table. Use delete instead.
+func (dt *table) ClearAll() error {
+	return fmt.Errorf("this method is not implemented for table")
 }
 
 // Put adds keys with the prefix value given to NewTable
@@ -229,12 +234,12 @@ func (tb *tableBatch) ValueSize() int {
 	return tb.batch.ValueSize()
 }
 
-// // Reset clears batch key-values and resets the size to zero
+// Reset clears batch key-values and resets the size to zero
 func (tb *tableBatch) Reset() {
 	tb.batch.Reset()
 }
 
-// Delete removes the key from the batch and database
+// Del removes the key from the batch and database
 func (tb *tableBatch) Del(k []byte) error {
 	err := tb.batch.Del(k)
 	if err != nil {

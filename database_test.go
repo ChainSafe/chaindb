@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dgraph-io/badger/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -200,7 +201,7 @@ func testGetPath(db Database, t *testing.T) {
 
 func TestBadgerDB_Batch(t *testing.T) {
 	db := newTestBadgerDB(t)
-	testBatchPut(db, t)
+	testBatchPutAndDelete(db, t)
 }
 
 func batchTestSetup(db Database) (func(i int) []byte, func(i int) []byte, Batch) {
@@ -214,7 +215,7 @@ func batchTestSetup(db Database) (func(i int) []byte, func(i int) []byte, Batch)
 	return testKey, testValue, b
 }
 
-func testBatchPut(db Database, t *testing.T) {
+func testBatchPutAndDelete(db Database, t *testing.T) {
 	k, v, b := batchTestSetup(db)
 
 	for i := 0; i < 1000; i++ {
@@ -222,18 +223,37 @@ func testBatchPut(db Database, t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to add key-value to batch mapping  %q", err)
 		}
+
 		err = b.Flush()
 		if err != nil {
 			t.Fatalf("failed to flush batch %q", err)
 		}
+
 		size := b.ValueSize()
 		if size == 0 {
 			t.Fatalf("failed to set size of data in each batch, got %v", size)
 		}
+
 		err = b.Del(k(i))
 		if err != nil {
 			t.Fatalf("failed to delete batch key %v", k(i))
 		}
+
+		_, err = db.Get(k(i))
+		if err != nil {
+			t.Fatalf("failed to get batch key %v", k(i))
+		}
+
+		err = b.Flush()
+		if err != nil {
+			t.Fatalf("failed to flush batch %q", err)
+		}
+
+		_, err = db.Get(k(i))
+		if err != badger.ErrKeyNotFound {
+			t.Fatalf("failed to get delete key %v", k(i))
+		}
+
 		b.Reset()
 		if b.ValueSize() != 0 {
 			t.Fatalf("failed to reset batch mapping to zero, got %v, expected %v", b.ValueSize(), 0)
