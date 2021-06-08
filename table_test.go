@@ -33,6 +33,12 @@ func TestBadgerDB_TablePrefixOps(t *testing.T) {
 	testNewTableBatch(db, t)
 }
 
+func TestTable_Batch(t *testing.T) {
+	db := newTestBadgerDB(t)
+	tbl := NewTable(db, "random")
+	testBatchPutAndDelete(t, tbl)
+}
+
 func testPutTablesWithPrefix(db Database, t *testing.T) {
 	data := testKVData()
 	ops := NewTable(db, "99")

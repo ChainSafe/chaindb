@@ -241,11 +241,7 @@ func (tb *tableBatch) Reset() {
 
 // Del removes the key from the batch and database
 func (tb *tableBatch) Del(k []byte) error {
-	err := tb.batch.Del(k)
-	if err != nil {
-		return err
-	}
-	return nil
+	return tb.batch.Del(append([]byte(tb.prefix), k...))
 }
 
 func (dt *table) Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []byte) error {
