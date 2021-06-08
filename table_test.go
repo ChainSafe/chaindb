@@ -36,7 +36,7 @@ func TestBadgerDB_TablePrefixOps(t *testing.T) {
 func TestTable_Batch(t *testing.T) {
 	db := newTestBadgerDB(t)
 	tbl := NewTable(db, "random")
-	testBatchPutAndDelete(tbl, t)
+	testBatchPutAndDelete(t, tbl)
 }
 
 func testPutTablesWithPrefix(db Database, t *testing.T) {

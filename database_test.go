@@ -201,7 +201,7 @@ func testGetPath(db Database, t *testing.T) {
 
 func TestBadgerDB_Batch(t *testing.T) {
 	db := newTestBadgerDB(t)
-	testBatchPutAndDelete(db, t)
+	testBatchPutAndDelete(t, db)
 }
 
 func batchTestSetup(db Database) (func(i int) []byte, func(i int) []byte, Batch) {
@@ -215,7 +215,7 @@ func batchTestSetup(db Database) (func(i int) []byte, func(i int) []byte, Batch)
 	return testKey, testValue, b
 }
 
-func testBatchPutAndDelete(db Database, t *testing.T) {
+func testBatchPutAndDelete(t *testing.T, db Database) {
 	k, v, b := batchTestSetup(db)
 
 	for i := 0; i < 1000; i++ {
