@@ -18,12 +18,12 @@ package chaindb
 
 import (
 	"context"
-	"github.com/dgraph-io/badger/v2/options"
 	"os"
 	"sync"
 
 	log "github.com/ChainSafe/log15"
 	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v2/options"
 )
 
 // BadgerDB contains directory path to data and db instance
