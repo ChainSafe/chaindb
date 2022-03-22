@@ -46,20 +46,25 @@ type Config struct {
 
 // NewBadgerDB initializes badgerDB instance
 func NewBadgerDB(cfg *Config) (*BadgerDB, error) {
-	opts := badger.DefaultOptions(cfg.DataDir)
-	opts.ValueDir = cfg.DataDir
-	opts.Logger = nil
-	opts.WithSyncWrites(false)
-	opts.WithNumCompactors(20)
-	// opts.WithBlockCacheSize(1 << 16) // TODO: add caching
-	opts.WithInMemory(cfg.InMemory)
+	var opts badger.Options
+	if cfg.InMemory {
+		opts = badger.DefaultOptions("").WithInMemory(true)
+	} else {
+		opts = badger.DefaultOptions(cfg.DataDir)
+		opts.ValueDir = cfg.DataDir
+		opts.Logger = nil
+		opts.WithSyncWrites(false)
+		opts.WithNumCompactors(20)
+		// opts.WithBlockCacheSize(1 << 16) // TODO: add caching
 
-	if cfg.Compress {
-		opts.WithCompression(options.Snappy)
+		if cfg.Compress {
+			opts.WithCompression(options.Snappy)
+		}
+		if err := os.MkdirAll(cfg.DataDir, os.ModePerm); err != nil {
+			return nil, err
+		}
 	}
-	if err := os.MkdirAll(cfg.DataDir, os.ModePerm); err != nil {
-		return nil, err
-	}
+
 	db, err := badger.Open(opts)
 	if err != nil {
 		return nil, err
