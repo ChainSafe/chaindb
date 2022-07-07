@@ -49,6 +49,7 @@ func NewBadgerDB(cfg *Config) (*BadgerDB, error) {
 	var opts badger.Options
 	if cfg.InMemory {
 		opts = badger.DefaultOptions("").WithInMemory(true)
+		opts.Logger = nil
 	} else {
 		opts = badger.DefaultOptions(cfg.DataDir)
 		opts.ValueDir = cfg.DataDir
