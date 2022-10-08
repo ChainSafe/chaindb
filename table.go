@@ -92,6 +92,8 @@ func (dt *table) NewIterator() Iterator {
 		}
 		tableIter.txn = txn
 		tableIter.iter = iter
+		iter.Rewind()
+		iter.Seek([]byte(dt.prefix))
 		return tableIter
 	}
 
@@ -130,53 +132,18 @@ func (i *tableIterator) Next() bool {
 	i.lock.RLock()
 	defer i.lock.RUnlock()
 
-	loopUntilNext := func() {
-		key := i.rawKey()
-		for {
-			if !i.iter.Valid() {
-				break
-			}
+	for {
+		if !i.iter.Valid() {
+			break
+		}
 
-			if len(key) < len(i.prefix) {
-				i.iter.Next()
-				if i.iter.Valid() {
-					key = i.rawKey()
-				}
-				continue
-			}
-
-			if bytes.Equal(key[:len(i.prefix)], i.prefix) {
-				break
-			}
-
-			if i.iter.Valid() {
-				i.iter.Next()
-			}
-
-			if i.iter.Valid() {
-				key = i.rawKey()
-			}
+		i.iter.Next()
+		if i.iter.ValidForPrefix(i.prefix) {
+			return true
 		}
 	}
 
-	if !i.init {
-		i.iter.Rewind()
-		i.init = true
-		loopUntilNext()
-		return i.iter.Valid()
-	}
-
-	if !i.iter.Valid() {
-		return false
-	}
-
-	i.iter.Next()
-	if !i.iter.Valid() {
-		return false
-	}
-
-	loopUntilNext()
-	return i.iter.Valid()
+	return false
 }
 
 // Seek will look for the provided key if present and go to that position. If
@@ -193,7 +160,7 @@ func (i *tableIterator) rawKey() []byte {
 	return i.iter.Item().Key()
 }
 
-// Key returns an item key
+// Key returns an item key without the table prefix
 func (i *tableIterator) Key() []byte {
 	return removePrefix(i.rawKey(), i.prefix)
 }
