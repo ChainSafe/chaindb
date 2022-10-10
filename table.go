@@ -31,6 +31,7 @@ type table struct {
 }
 
 var _ Database = (*table)(nil)
+var _ Iterator = (*tableIterator)(nil)
 
 type tableBatch struct {
 	batch  Batch
@@ -124,6 +125,11 @@ func (i *tableIterator) Release() {
 	defer i.lock.Unlock()
 	i.iter.Close()
 	i.txn.Discard()
+}
+
+// Valid returns whether the current iterator position has an item.
+func (i *tableIterator) Valid() bool {
+	return i.iter.Valid()
 }
 
 // Next rewinds the iterator to the zero-th position if uninitialized, and then will advance the iterator by one
