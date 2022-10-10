@@ -168,7 +168,7 @@ func TestTable_IteratorWithPrefix(t *testing.T) {
 	}
 
 	iter := tbl.NewIterator()
-	res := [][]byte{}
+	res := [][]byte{iter.Key()}
 	for iter.Next() {
 		res = append(res, iter.Key())
 	}

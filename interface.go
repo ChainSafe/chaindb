@@ -45,6 +45,7 @@ type Batch interface {
 // Iterator iterates over key/value pairs in ascending key order.
 // Must be released after use.
 type Iterator interface {
+	Valid() bool
 	Next() bool
 	Key() []byte
 	Value() []byte

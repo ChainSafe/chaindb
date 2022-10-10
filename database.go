@@ -36,6 +36,7 @@ type BadgerDB struct {
 type KVList = badger.KVList
 
 var _ Database = (*BadgerDB)(nil)
+var _ Iterator = (*BadgerIterator)(nil)
 
 // Config defines configurations for BadgerDB instance
 type Config struct {
@@ -212,6 +213,11 @@ func (i *BadgerIterator) Release() {
 	defer i.lock.Unlock()
 	i.iter.Close()
 	i.txn.Discard()
+}
+
+// Valid returns whether the current iterator position has an item.
+func (i *BadgerIterator) Valid() bool {
+	return i.iter.Valid()
 }
 
 // Next rewinds the iterator to the zero-th position if uninitialized, and then will advance the iterator by one
