@@ -22,8 +22,9 @@ import (
 	"sync"
 
 	log "github.com/ChainSafe/log15"
-	"github.com/dgraph-io/badger/v2"
-	"github.com/dgraph-io/badger/v2/options"
+	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v3/options"
+	"github.com/dgraph-io/badger/v3/pb"
 )
 
 // BadgerDB contains directory path to data and db instance
@@ -56,11 +57,10 @@ func NewBadgerDB(cfg *Config) (*BadgerDB, error) {
 		opts.ValueDir = cfg.DataDir
 		opts.Logger = nil
 		opts.WithSyncWrites(false)
-		opts.WithNumCompactors(20)
-		// opts.WithBlockCacheSize(1 << 16) // TODO: add caching
+		opts.WithBlockCacheSize(1 << 16)
 
 		if cfg.Compress {
-			opts.WithCompression(options.Snappy)
+			opts.WithCompression(options.ZSTD)
 		}
 		if err := os.MkdirAll(cfg.DataDir, os.ModePerm); err != nil {
 			return nil, err
@@ -184,7 +184,7 @@ func (db *BadgerDB) ClearAll() error {
 }
 
 // Subscribe to watch for changes for the given prefixes
-func (db *BadgerDB) Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []byte) error {
+func (db *BadgerDB) Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []pb.Match) error {
 	return db.db.Subscribe(ctx, cb, prefixes)
 }
 

@@ -29,7 +29,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v3/pb"
 	"github.com/stretchr/testify/require"
 )
 
@@ -382,7 +383,9 @@ func newBadgerCompressed(t *testing.T, compress bool, filePath string) Database 
 }
 
 func ExampleDB_Subscribe() {
-	prefix := []byte{'a'}
+	prefix := []pb.Match{
+		{Prefix: []byte{'a'}},
+	}
 
 	// This key should be printed, since it matches the prefix.
 	aKey := []byte("a-key")
