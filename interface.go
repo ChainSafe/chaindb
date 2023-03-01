@@ -20,7 +20,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/dgraph-io/badger/v3/pb"
+	"github.com/dgraph-io/badger/v4/pb"
 )
 
 // Database wraps all database operations. All methods are safe for concurrent use.

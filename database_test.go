@@ -29,8 +29,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dgraph-io/badger/v3"
-	"github.com/dgraph-io/badger/v3/pb"
+	"github.com/dgraph-io/badger/v4"
+	"github.com/dgraph-io/badger/v4/pb"
 	"github.com/stretchr/testify/require"
 )
 

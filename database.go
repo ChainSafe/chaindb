@@ -22,9 +22,9 @@ import (
 	"sync"
 
 	log "github.com/ChainSafe/log15"
-	"github.com/dgraph-io/badger/v3"
-	"github.com/dgraph-io/badger/v3/options"
-	"github.com/dgraph-io/badger/v3/pb"
+	"github.com/dgraph-io/badger/v4"
+	"github.com/dgraph-io/badger/v4/options"
+	"github.com/dgraph-io/badger/v4/pb"
 )
 
 // BadgerDB contains directory path to data and db instance
