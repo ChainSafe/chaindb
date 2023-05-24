@@ -22,7 +22,8 @@ import (
 	"fmt"
 
 	log "github.com/ChainSafe/log15"
-	"github.com/dgraph-io/badger/v2"
+	"github.com/dgraph-io/badger/v4"
+	"github.com/dgraph-io/badger/v4/pb"
 )
 
 type table struct {
@@ -217,6 +218,6 @@ func (tb *tableBatch) Del(k []byte) error {
 	return tb.batch.Del(append([]byte(tb.prefix), k...))
 }
 
-func (dt *table) Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []byte) error {
+func (dt *table) Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []pb.Match) error {
 	return dt.db.Subscribe(ctx, cb, prefixes)
 }

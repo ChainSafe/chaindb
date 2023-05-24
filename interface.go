@@ -19,6 +19,8 @@ package chaindb
 import (
 	"context"
 	"io"
+
+	"github.com/dgraph-io/badger/v4/pb"
 )
 
 // Database wraps all database operations. All methods are safe for concurrent use.
@@ -30,7 +32,7 @@ type Database interface {
 	NewBatch() Batch
 	Path() string
 	NewIterator() Iterator
-	Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []byte) error
+	Subscribe(ctx context.Context, cb func(kv *KVList) error, prefixes []pb.Match) error
 	ClearAll() error
 }
 
