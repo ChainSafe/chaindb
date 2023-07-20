@@ -56,9 +56,6 @@ func NewBadgerDB(cfg *Config) (*BadgerDB, error) {
 		opts = badger.DefaultOptions(cfg.DataDir)
 		opts.ValueDir = cfg.DataDir
 		opts.Logger = nil
-		opts.WithSyncWrites(false)
-		opts.WithNumCompactors(20)
-		// opts.WithBlockCacheSize(1 << 16) // TODO: add caching
 
 		if cfg.Compress {
 			opts.WithCompression(options.Snappy)
